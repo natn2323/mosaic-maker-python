@@ -12,6 +12,7 @@ Features:
 """
 
 #######################################BEGINNING#####################################
+from math import sqrt
 
 def partition_and_calculate(filename, n):
     """
@@ -40,6 +41,8 @@ def partition_and_calculate(filename, n):
     storage = [[0 for x in range(n)] for y in range(n)]
     r_sum, g_sum, b_sum = 0, 0, 0
 
+    val_error_flag, temp_count = False, None
+
     for i in range(0, n): # 0 (inclusive) to n (exclusive)
         x0, x1 = width*(i/float(n)), width*((i+1)/float(n))
         for j in range(0, n):
@@ -48,8 +51,30 @@ def partition_and_calculate(filename, n):
             subsamples = random.randint(1, max_subsamples) # at least 1 subsample, at most max_subsamples
             for k in range(0, subsamples):
                 rand_width = random.randint(int(x0), int(x1-1))
+                print(y0, y1-1)
+                print(int(y0), int(y1-1))
                 rand_height = random.randint(int(y0), int(y1-1))
                 temp.append(img.getpixel((rand_width, rand_height)))
+
+                """
+                try:
+                    rand_width = random.randint(int(x0), int(x1-1))
+                    rand_height = random.randint(int(y0), int(y1-1))
+                    temp.append(img.getpixel((rand_width, rand_height)))
+                except ValueError: # If you receive a ValueError, it means that partitions are very small, 
+                                   # and for c in [x0,x1,y0,y1], c%1 == c, i.e. c is at the tenths/hundredths
+                                   # level. This causes randint(1, 0) typically. Answer is to either decrease
+                                   # number of partitions, or resize the original image so that it can be
+                                   # partitioned so many times
+                    print("y0, y1-1 == {}, {}".format(int(y0), int(y1-1)))
+                    print("y0, y1-1 == {}, {}".format(y0, y1-1))
+                    val_error_flag = True
+                    temp = k
+                finally:
+                    if val_error_flag == True and temp_count is not None:
+                        n = 
+                """        
+                
 
             # Calculate average color for the partition
             for rgb in temp:
@@ -59,7 +84,6 @@ def partition_and_calculate(filename, n):
             r_avg = r_sum / len(temp)
             g_avg = g_sum / len(temp)
             b_avg = b_sum / len(temp)
-            #storage.append((r_avg, g_avg, b_avg)) 
             storage[i][j] = (r_avg, g_avg, b_avg)
             
             r_sum, g_sum, b_sum, temp = 0, 0, 0, [] # resetting variables
@@ -181,89 +205,123 @@ def unit_test(storage):
 
 if __name__ == "__main__":
     from PIL import Image
-    import random 
-    from math import sqrt
     from pprint import pprint
+    import random, os, sys, math
 
-    """
-    filename = 'random.jpg'
-    storage = partition_and_calculate(filename) # storage contains list of tuples with RGB values; 
-                                                # storage contains the average RGB value of partitions, columns first, then rows
-    #mosaic_filename = 'red.jpg'
-    #mosaic_storage = partition_and_calculate(mosaic_filename)
+    interactive_flag = True
 
-    final = calculate_average(storage)
-    unit_test(storage)
-    unit_test(final)
-    """
+    # Finding the files from which the mosaic will be comprised
+    color_n, color_list = 3, []
+    files = os.listdir(os.getcwd() + '/photos_to_choose_from/')
+    color_files = [os.path.abspath('./photos_to_choose_from/' + i) for i in files]
 
+    # Finding the file for the mosaic
     mosaic = 'random.jpg'
-    mosaic_n = 10
+
+    # Determining N - the number of partitions for the mosaic
+    mosaic_n = 100000
+
+    # Determining the given image's size
+    mosaic_im = Image.open(mosaic)
+    width, height = mosaic_im.size[0], mosaic_im.size[1]
+
+    # Determining the thumbnail size
+    #thumbnail_size, thumbnail_list = (width/mosaic_n, height/mosaic_n), []
+
+    # For checking the thumbnail size; only to be used with -i interactive flag, otherwise we'll use default n, or lowest n value possible
+    mos_n = float(mosaic_n)
+    while width/mos_n < 1 or height/mos_n < 1:
+        #print("w,h is: {}, {}".format(width/mos_n, height/mos_n))
+        lowest_n = None
+        if width < height:
+            lowest_n = width-1
+        elif height < width:
+            lowest_n = height-1
+
+        print("Number of partitions must be within the range of [1, {}]. The second number is taken from the lesser of the width and height.".format(lowest_n))
+        response = raw_input("Enter a new number of partitions: ")
+        while True:
+            if response.isdigit() and (1 <= int(response) <= lowest_n):
+                mos_n = float(response)
+                break
+            else:
+                response = raw_input("Please enter a valid number between 1 and {}: ".format(lowest_n))
+
+    mosaic_n = int(math.floor(mos_n))
+    #print("mosaic n is: ", mosaic_n)
+    thumbnail_size, thumbnail_list = (width/mosaic_n, height/mosaic_n), []
+    
+    # Partitioning the image to become the mosaic
     mosaic_storage = partition_and_calculate(mosaic, mosaic_n)
-    #pprint(mosaic_storage)
-    #mosaic_final = [[None for i in range(mosaic_n)] for j in range(mosaic_n)] # Initializing list with (mosaic_n)x(mosaic_N) values
-    #pprint(mosaic_final)
     mosaic_final = []
 
-    color_n, color_list = 3, []
-    color_files = ['red.jpg', 'black.jpg', 'white.jpg', 'green.jpg', 'blue.jpg', 'magenta.jpg', 'cyan.jpg', 'yellow.jpg']
+    # Partitioning the images that will comprise the mosaic
     for colors in color_files:
         storage = partition_and_calculate(colors, color_n)
         final = calculate_average(storage)
         color_list.append(final)
 
-    #print(color_list)
+    # Determining the thumbnail sizes based on (mosaic_width/N, mosaic_height/N)
+    #mosaic_im = Image.open(mosaic)
+    #width, height, thumbnail_list = mosaic_im.size[0], mosaic_im.size[1], []
+    #thumbnail_size = (width/mosaic_n, height/mosaic_n)
 
-    mosaic_im = Image.open(mosaic)
-    width, height, thumbnail_list = mosaic_im.size[0], mosaic_im.size[1], []
-    thumbnail_size = (width/mosaic_n, height/mosaic_n)
-    #print("mosaic size is: ", (width, height))
-    #print("thumbnail size is: ", thumbnail_size)
-
+    # Making the comprising images into thumbnails and normalizing their heights & widths
     for image in color_files:
         im = Image.open(image)
         im = im.resize(thumbnail_size)
         thumbnail_list.append(im)
 
+    # Comparing the mosaic's partitions to the thumbnail partitions
     for row_index in range(len(mosaic_storage)):
         for col_index in range(len(mosaic_storage[row_index])):
             partition_rgb, comparison_dict = mosaic_storage[row_index][col_index], {}
             for index, color in enumerate(color_list):
+                # Associating index of thumbnail to its similarity with partition
                 comparison_dict[str(index)] = calculate_similarity(partition_rgb, color)
 
+            # Finding thumbnail with highest (Euclidean distance) similarity to partition
             most_similar_index = None
             for key, value in sorted(comparison_dict.iteritems(), key=lambda (k,v): (v,k)):
-                #print (key, value)
                 most_similar_index = int(key)             
                 break
 
+            # Saving index of thumbnail to paste into mosaic
             comparison_dict = {}
-            #print("Most similar for row: {}, col: {} is {}".format(row_index, col_index, most_similar_index))
-            #mosaic_final[row_index][col_index] = most_similar_key 
             mosaic_final.append(most_similar_index)
-
 
     # Doing the pasting now...  bugs everywhere
     n = mosaic_n
 
+    # To have a whole image, new image size is based directly on thumbnail sizes, 
+    # not mosaic image size
     new_im = Image.new("RGB", (thumbnail_size[0]*n, thumbnail_size[1]*n))
     new_im_width, new_im_height = new_im.size[0], new_im.size[1]
-    
+
+    #print("Size of thumbnail is: ", thumbnail_list[mosaic_final[0]].size)
+    #print("New image size is: ", new_im.size)
+   
+    # Pasting the thumbnail into [x][y] regions of mosaic
     count = 0
-    for i in range(0, n): # 0 (inclusive) to n (exclusive)
-        x0, x1 = int(new_im_width*(i/float(n))), int(new_im_width*((i+1)/float(n)))
-        for j in range(0, n):
-            y0, y1 = int(new_im_height*(j/float(n))), int(new_im_height*((j+1)/float(n)))
-            print("values are: ", (x0, y0, x1, y1)) 
-            paste_box = (x0, y0, x1, y1)
-            #new_im.paste(Image.open(color_files[mosaic_final[count]]).thumbnail(thumbnail_size), paste_box)
-            new_im.paste(thumbnail_list[mosaic_final[count]], paste_box)
+    try:
+    #for k in range(0, len(mosaic_final)):
+        for i in range(0, n): # 0 (inclusive) to n (exclusive)
+            x0, x1 = thumbnail_size[0]*i, thumbnail_size[0]*(i+1)
+            for j in range(0, n):
+                y0, y1 = thumbnail_size[1]*j, thumbnail_size[1]*(j+1)
+                if j%5 == 0:
+                    #print('\n')
+                    pass
+                paste_box = (x0, y0, x1, y1)
+                new_im.paste(thumbnail_list[mosaic_final[count]], paste_box)
 
-            count = count + 1
+                count = count + 1
+    except ValueError:
+        print("error thrown on: {}".format(thumbnail_list[mosaic_final[count]]))
+        print("paste box on er: {}".format(paste_box))
 
-    print("Size of thumbnail is: ", thumbnail_list[mosaic_final[count-1]].size)
-    print("New image size is: ", new_im.size)
     new_im.save('pixelated.jpg')
+    print(new_im.size)
     new_im.show()
 
     """
@@ -274,5 +332,7 @@ if __name__ == "__main__":
     or have a ranking (e.g. only consider the top 20). 
     Perhaps, have something like, if "large_image.rgb - 10 < smaller_image_to_match.rgb < large_image.rgb + 10", then consider it a match
     """
+    from unit_tests import dist_unit_test
+    from unit_tests import unit_test
     dist_unit_test()
-
+    
