@@ -13,6 +13,7 @@ Features:
 
 #######################################BEGINNING#####################################
 from math import sqrt
+import os
 
 def partition_and_calculate(filename, n):
     """
@@ -202,13 +203,45 @@ def unit_test(storage):
                 print "{}".format(output)
         print ""
 
+def setup(interactive_flag):
+    setup_parameters = None
+    if interactive_flag == False:
+        return ('random.jpg', 100000, '/photos_to_choose_from/', 3)
+    else:
+        filename = raw_input("Please enter the filename of your mosaic image: ")
+        while not os.path.isfile(filename):
+            filename = raw_input("Please enter an existing filename within this directory: ")
+
+        mosaic_n = raw_input("Please enter the number of partitions for your mosaic image: ")
+        while not mosaic_n.isdigit() or mosaic_n <= 0:
+            mosaic_n = raw_input("Please enter a valid number of partitions for the mosaic image: ")
+
+        color_n = raw_input("Please enter the number of partitions for your comprising images: ")
+        while not color_n.isdigit() or color_n <= 0:
+            color_n = raw_input("Please enter a valid number of partitions for the comprising images: ")
+
+        color_files_dir = raw_input("Please enter the name of the folder containing your comprising images: ")
+        while not os.path.isdir(color_files_dir):
+            color_files_dir = raw_input("Please enter an existing directory within this directory: ")
+
+        return (filename, mosaic_n, color_files_dir, color_n)
+
 
 if __name__ == "__main__":
     from PIL import Image
     from pprint import pprint
     import random, os, sys, math
 
-    interactive_flag = True
+    ####################################################### Find Computation Parameters ##########################################################
+    interactive_flag = False
+    """
+    Interactive mode needs inputs for:
+        -n
+        -folder of comprising photos
+        -file name of photo to turn into a mosaic
+        -option to get comprising photos from web (Selenium)
+        -interactive setting of n, in the case that the given n is invalid
+    """
 
     # Finding the files from which the mosaic will be comprised
     color_n, color_list = 3, []
@@ -225,10 +258,7 @@ if __name__ == "__main__":
     mosaic_im = Image.open(mosaic)
     width, height = mosaic_im.size[0], mosaic_im.size[1]
 
-    # Determining the thumbnail size
-    #thumbnail_size, thumbnail_list = (width/mosaic_n, height/mosaic_n), []
-
-    # For checking the thumbnail size; only to be used with -i interactive flag, otherwise we'll use default n, or lowest n value possible
+    # For checking the thumbnail size; only to be used with -i interactive flag, otherwise we'll use default n, or decently low value of n
     mos_n = float(mosaic_n)
     while width/mos_n < 1 or height/mos_n < 1:
         #print("w,h is: {}, {}".format(width/mos_n, height/mos_n))
@@ -248,9 +278,11 @@ if __name__ == "__main__":
                 response = raw_input("Please enter a valid number between 1 and {}: ".format(lowest_n))
 
     mosaic_n = int(math.floor(mos_n))
-    #print("mosaic n is: ", mosaic_n)
     thumbnail_size, thumbnail_list = (width/mosaic_n, height/mosaic_n), []
-    
+
+
+
+    ####################################################### Computations Done -- Begin Process ####################################################
     # Partitioning the image to become the mosaic
     mosaic_storage = partition_and_calculate(mosaic, mosaic_n)
     mosaic_final = []
@@ -260,11 +292,6 @@ if __name__ == "__main__":
         storage = partition_and_calculate(colors, color_n)
         final = calculate_average(storage)
         color_list.append(final)
-
-    # Determining the thumbnail sizes based on (mosaic_width/N, mosaic_height/N)
-    #mosaic_im = Image.open(mosaic)
-    #width, height, thumbnail_list = mosaic_im.size[0], mosaic_im.size[1], []
-    #thumbnail_size = (width/mosaic_n, height/mosaic_n)
 
     # Making the comprising images into thumbnails and normalizing their heights & widths
     for image in color_files:
@@ -281,6 +308,7 @@ if __name__ == "__main__":
                 comparison_dict[str(index)] = calculate_similarity(partition_rgb, color)
 
             # Finding thumbnail with highest (Euclidean distance) similarity to partition
+            # TODO if you wanted to have unique comprising images, implement it here
             most_similar_index = None
             for key, value in sorted(comparison_dict.iteritems(), key=lambda (k,v): (v,k)):
                 most_similar_index = int(key)             
@@ -290,24 +318,18 @@ if __name__ == "__main__":
             comparison_dict = {}
             mosaic_final.append(most_similar_index)
 
-    # Doing the pasting now...  bugs everywhere
-    n = mosaic_n
-
     # To have a whole image, new image size is based directly on thumbnail sizes, 
     # not mosaic image size
-    new_im = Image.new("RGB", (thumbnail_size[0]*n, thumbnail_size[1]*n))
+    new_im = Image.new("RGB", (thumbnail_size[0]*mosaic_n, thumbnail_size[1]*mosaic_n))
     new_im_width, new_im_height = new_im.size[0], new_im.size[1]
 
-    #print("Size of thumbnail is: ", thumbnail_list[mosaic_final[0]].size)
-    #print("New image size is: ", new_im.size)
-   
     # Pasting the thumbnail into [x][y] regions of mosaic
     count = 0
     try:
     #for k in range(0, len(mosaic_final)):
-        for i in range(0, n): # 0 (inclusive) to n (exclusive)
+        for i in range(0, mosaic_n): # 0 (inclusive) to n (exclusive)
             x0, x1 = thumbnail_size[0]*i, thumbnail_size[0]*(i+1)
-            for j in range(0, n):
+            for j in range(0, mosaic_n):
                 y0, y1 = thumbnail_size[1]*j, thumbnail_size[1]*(j+1)
                 if j%5 == 0:
                     #print('\n')
@@ -321,7 +343,6 @@ if __name__ == "__main__":
         print("paste box on er: {}".format(paste_box))
 
     new_im.save('pixelated.jpg')
-    print(new_im.size)
     new_im.show()
 
     """
