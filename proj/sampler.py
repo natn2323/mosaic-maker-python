@@ -204,6 +204,14 @@ def unit_test(storage):
         print ""
 
 def setup(interactive_flag):
+    """
+    Function prototype:
+        setup(interactive_flag)
+    Args:
+        interactive_flag - a boolean which indicates whether to accept user input
+    Return:
+        A 4-tuple containing the user-inputted data
+    """
     setup_parameters = None
     if interactive_flag == False:
         return ('random.jpg', 100000, '/photos_to_choose_from/', 3)
@@ -223,6 +231,10 @@ def setup(interactive_flag):
         color_files_dir = raw_input("Please enter the name of the folder containing your comprising images: ")
         while not os.path.isdir(color_files_dir):
             color_files_dir = raw_input("Please enter an existing directory within this directory: ")
+        if color_files_dir[0] != '/':
+            color_files_dir = '/' + color_files_dir
+        if color_files_dir[-1] != '/':
+            color_files_dir = color_files_dir + '/'
 
         return (filename, mosaic_n, color_files_dir, color_n)
 
@@ -230,23 +242,30 @@ def setup(interactive_flag):
 if __name__ == "__main__":
     from PIL import Image
     from pprint import pprint
-    import random, os, sys, math
+    import random, os, sys, math, argparse
+
+    ##################################################### Finding Command Line Arguments #########################################################
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--interactive", help="interactive mode", action="store_true")
+    arguments = parser.parse_args()
 
     ####################################################### Find Computation Parameters ##########################################################
-    interactive_flag = False
+    interactive_flag = arguments.interactive
+    args = setup(interactive_flag)
     """
     Interactive mode needs inputs for:
-        -n
-        -folder of comprising photos
-        -file name of photo to turn into a mosaic
         -option to get comprising photos from web (Selenium)
-        -interactive setting of n, in the case that the given n is invalid
+    Option for resolution of mosaic
     """
+
+
+    # Setting up
+    mosaic, mosaic_n, color_files_dir, color_n = args[0], args[1], args[2], args[3]
 
     # Finding the files from which the mosaic will be comprised
     color_n, color_list = 3, []
-    files = os.listdir(os.getcwd() + '/photos_to_choose_from/')
-    color_files = [os.path.abspath('./photos_to_choose_from/' + i) for i in files]
+    files = os.listdir(os.getcwd() + color_files_dir)
+    color_files = [os.path.abspath('.' + color_files_dir + i) for i in files]
 
     # Finding the file for the mosaic
     mosaic = 'random.jpg'
@@ -257,6 +276,10 @@ if __name__ == "__main__":
     # Determining the given image's size
     mosaic_im = Image.open(mosaic)
     width, height = mosaic_im.size[0], mosaic_im.size[1]
+
+
+
+
 
     # For checking the thumbnail size; only to be used with -i interactive flag, otherwise we'll use default n, or decently low value of n
     mos_n = float(mosaic_n)
@@ -331,9 +354,6 @@ if __name__ == "__main__":
             x0, x1 = thumbnail_size[0]*i, thumbnail_size[0]*(i+1)
             for j in range(0, mosaic_n):
                 y0, y1 = thumbnail_size[1]*j, thumbnail_size[1]*(j+1)
-                if j%5 == 0:
-                    #print('\n')
-                    pass
                 paste_box = (x0, y0, x1, y1)
                 new_im.paste(thumbnail_list[mosaic_final[count]], paste_box)
 
