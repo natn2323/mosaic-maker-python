@@ -13,6 +13,7 @@ A mosaic maker implemented in Python. This program makes use of two mathematical
   * It is very well possible that using *randomness* to determine the average RGB color value of the entire image will lead to an average which is less than ideal, even less so than using normal sampling. However, this is a weak-"con", since imperfections tend to lend realism to photomosaics.
   
 * **Euclidean metric**
+
   The *Euclidean metric*, also know as *Euclidean distance*, is a mathematical formula. The general form is `d(x, y) = sqrt( (x_1 - y_1)**2 + (x_2 - y_2)**2 + ... + (x_n - y_n)**2 )`. We shall be using this formula in 3-dimensions, to represent the RGB color vectors. In doing so, we merely calculate the distance between two RGB vectors and use this distance as a metric to determine the two RGB vectors' similarity, e.g. low distances indicate high color similarities while high distances indicate low color similarities. 
   
   Pro(s):
