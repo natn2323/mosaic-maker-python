@@ -1,5 +1,5 @@
 # Mosaic Maker
-A mosaic maker implemented in Python. This program makes use of two mathematical concepts. I will give a brief description as to their ideas as well as how I use them:
+A mosaic maker implemented in Python. Development began on June 24th, 2018. This program makes use of two mathematical concepts. I will give a brief description as to their ideas as well as how I use them:
 * **stochastic sampling** 
   
   The term *stochastic sampling* is a composition of two mathematical concepts. To begin, *sampling* refers to the act of selecting pieces from a whole. In this program, the pieces are the pixels and the whole is the image. This is a relatively easy process when using the `PIL` module. The second term, *stochastic*, is another mathematical term which essentially describes randomness. In conjunction with the previously described concept, as well as the fact that I partition the image into *n*-partitions, this composition refers to the random selection of pixels from an *n*-partitions of the image. In order to improve run-time, we take *samples* from the image, rather than averaging based on *every* pixel in the image.
